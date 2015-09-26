@@ -21,6 +21,39 @@
 
 		<script language="JavaScript">
 
+		// Rectangle "class"
+		var Rectangle = function(x1, y1, x2, y2) {
+			this.x1 = x1;
+			this.x2 = x2;
+			this.y1 = y1;
+			this.y2 = y2;
+			this.width = x2-x1;
+			this.height = y2-y1;
+		}
+
+		function createRectangleFromStroke(stroke)
+		{
+			if(stroke && stroke.length >= 2)
+			{
+				var rec = new Rectangle(stroke[0].x, stroke[0].y, stroke[0].x, stroke[0].y);
+				for(var i = 1; i < stroke.length; ++i)
+				{
+					if(rec.x1 > stroke[i].x)
+						rec.x1 = stroke[i].x;
+					if(rec.x2 < stroke[i].x)
+						rec.x2 = stroke[i].x;
+					if(rec.y1 > stroke[i].y)
+						rec.y1 = stroke[i].y;
+					if(rec.y2 < stroke[i].y)
+						rec.y2 = stroke[i].y;
+				}
+				rec.width = rec.x2 - rec.x1;
+				rec.height = rec.y2 - rec.y1;
+				return rec;
+			}
+			return false;
+		}
+
 		// Unused function
 		function keyDownHandler(e) {
 			// e = e || window.event;
@@ -74,7 +107,13 @@
 			var event_y = e.clientY - canvas_rectangle.top;
 			console.log("mouse down");
 			console.log("   " + event_x + "," + event_y);
+
+			selectFirstPoint.x = 0;
+			selectFirstPoint.y = 0;
+			selectSecondPoint.x = 0;
+			selectSecondPoint.y = 0;
 			if(tool == "draw") {
+				selectedStrokes = [];
 				stroke = [];
 			}
 			else if(tool == "select")
@@ -100,6 +139,7 @@
 			else if(tool == "select")
 			{
 				computeSelectedStrokes();
+				redraw();
 			}
 		}
 		function mouseMoveHandler(e) {
@@ -156,6 +196,14 @@
 			canvas_context.stroke();
 		}
 
+		function drawSelection(index)
+		{
+			canvas_context.beginPath();
+			var rec = createRectangleFromStroke(selectedStrokes[index]);
+			canvas_context.fillRect(rec.x1, rec.y1, rec.width, rec.height);
+			canvas_context.stroke();
+		}
+
 		var redraw = function() {
 			canvas_context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -164,11 +212,10 @@
 				drawStroke( arrayOfStrokes[i] );
 			}
 
-			canvas_context.strokeStyle = "rgba(0, 230, 255, " + 0.3 + ")";
-			for ( var i = 0; i < arrayOfStrokes.length; ++i ) {
-				drawStroke( arrayOfStrokes[i] );
+			canvas_context.fillStyle = "rgba(0, 230, 255, " + 0.3 + ")";
+			for ( var i = 0; i < selectedStrokes.length; ++i ) {
+				drawSelection(i);
 			}
-
 
 			if ( buttonIsDown ) {
 				canvas_context.strokeStyle = "#ff0000";
