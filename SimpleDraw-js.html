@@ -1,0 +1,222 @@
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+		<style type="text/css"></style>
+	</head>
+	<body>
+		<!-- Canva, where we draw the strokes -->
+		<canvas id="myCanvas" width="500" height="600" style="border:2px solid #000000;">
+		</canvas>
+
+		<form action="">
+			<fieldset>
+				<legend>Tools</legend>
+				<input type="radio" name="tool" value="draw" checked>Draw<br>
+				<input type="radio" name="tool" value="select">Rectangle select<br>
+				<input type="radio" name="tool" value="move">Move selection
+			</fieldset>
+		</form>
+		<br>
+		<button onclick="clearButtonHandler()">Clear</button>
+
+		<script language="JavaScript">
+
+		// Unused function
+		function keyDownHandler(e) {
+			// e = e || window.event;
+
+			if (e.keyCode == '38') {
+				console.log("Up Arrow");
+			}
+			else if (e.keyCode == '40') {
+				console.log("Down Arrow");
+			}
+			else if (e.keyCode == '37') {
+				console.log("Left Arrow");
+			}
+			else if (e.keyCode == '39') {
+				console.log("Right Arrow");
+			}
+		}
+
+		document.onkeydown = keyDownHandler;
+
+		var canvas = document.getElementById("myCanvas");
+		var canvas_context = canvas.getContext("2d");
+		var canvas_rectangle = canvas.getBoundingClientRect();
+
+		var buttonIsDown = false;
+
+		// this is the set of strokes already drawn
+		var arrayOfStrokes = [];
+
+		// this is the stroke currently being drawn
+		var stroke = []; // each stroke is an array of points
+
+		// this is the coordinates of the first point of the rectangle select being created
+		var selectFirstPoint = {
+			x: 0,
+			y: 0
+		};
+		// this is the coordinates of the second point of the rectangle select being created
+		var selectSecondPoint = {
+			x: 0,
+			y: 0
+		};
+
+		// Selected strokes
+		var selectedStrokes = [];
+
+		function mouseDownHandler(e) {
+			buttonIsDown = true;
+			var tool = getSelectedTool();
+			var event_x = e.clientX - canvas_rectangle.left;
+			var event_y = e.clientY - canvas_rectangle.top;
+			console.log("mouse down");
+			console.log("   " + event_x + "," + event_y);
+			if(tool == "draw") {
+				stroke = [];
+			}
+			else if(tool == "select")
+			{
+				selectedStrokes = [];
+				selectFirstPoint.x = event_x;
+				selectFirstPoint.y = event_y;
+			}
+		}
+		function mouseUpHandler(e) {
+			buttonIsDown = false;
+			var event_x = e.clientX - canvas_rectangle.left;
+			var event_y = e.clientY - canvas_rectangle.top;
+			console.log("mouse up");
+			var tool = getSelectedTool();
+
+			if(tool == "draw") {
+				if ( stroke.length > 2 ) {
+					arrayOfStrokes.push( stroke );
+				}
+				stroke = [];
+			}
+			else if(tool == "select")
+			{
+				computeSelectedStrokes();
+			}
+		}
+		function mouseMoveHandler(e) {
+			var event_x = e.clientX - canvas_rectangle.left;
+			var event_y = e.clientY - canvas_rectangle.top;
+			console.log("mouse move");
+
+			var tool = getSelectedTool();
+			if(tool == "draw")
+			{
+				if ( buttonIsDown ) {
+					stroke.push( { x : event_x, y : event_y } );
+				}
+				redraw();
+			}
+			else if(tool == "select" && buttonIsDown)
+			{
+				selectSecondPoint.x = event_x;
+				selectSecondPoint.y = event_y;
+				redraw();
+			}
+			else if(tool == "move")
+			{
+
+			}
+		}
+
+		canvas.addEventListener('mousedown',mouseDownHandler);
+		canvas.addEventListener('mouseup',mouseUpHandler);
+		canvas.addEventListener('mousemove',mouseMoveHandler);
+
+		function drawStroke( s ) {
+			canvas_context.beginPath();
+			for ( var i = 0; i < s.length; ++i ) {
+				var x = s[i].x;
+				var y = s[i].y;
+				if ( i === 0 ) {
+					canvas_context.moveTo(x,y);
+				}
+				else {
+					canvas_context.lineTo(x,y);
+				}
+			}
+			canvas_context.stroke();
+		}
+
+		function drawRectangleSelect() {
+			canvas_context.lineWidth="1";
+			canvas_context.strokeStyle="#FF9900";
+			canvas_context.beginPath();
+			canvas_context.rect(selectFirstPoint.x,selectFirstPoint.y,selectSecondPoint.x - selectFirstPoint.x,selectSecondPoint.y - selectFirstPoint.y);
+			canvas_context.fillStyle = "rgba(255, 202, 122, " + 0.3 + ")";
+			canvas_context.fillRect(selectFirstPoint.x,selectFirstPoint.y,selectSecondPoint.x - selectFirstPoint.x,selectSecondPoint.y - selectFirstPoint.y);
+			canvas_context.stroke();
+		}
+
+		var redraw = function() {
+			canvas_context.clearRect(0, 0, canvas.width, canvas.height);
+
+			canvas_context.strokeStyle = "#000000";
+			for ( var i = 0; i < arrayOfStrokes.length; ++i ) {
+				drawStroke( arrayOfStrokes[i] );
+			}
+
+			canvas_context.strokeStyle = "rgba(0, 230, 255, " + 0.3 + ")";
+			for ( var i = 0; i < arrayOfStrokes.length; ++i ) {
+				drawStroke( arrayOfStrokes[i] );
+			}
+
+
+			if ( buttonIsDown ) {
+				canvas_context.strokeStyle = "#ff0000";
+				drawStroke( stroke );
+				drawRectangleSelect();
+			}
+		}
+		redraw();
+
+		function clearButtonHandler() {
+			arrayOfStrokes = [];
+			redraw();
+		}
+
+		function getSelectedTool() {
+			var radios = document.getElementsByName('tool');
+
+			for (var i = 0, length = radios.length; i < length; i++) {
+				if (radios[i].checked) {
+					return radios[i].value;
+				}
+			}
+		}
+
+		function computeSelectedStrokes() {
+			var minx=Math.min(selectFirstPoint.x, selectSecondPoint.x),
+				miny=Math.min(selectFirstPoint.y, selectSecondPoint.y),
+				maxx=Math.max(selectFirstPoint.x, selectSecondPoint.x),
+				maxy=Math.max(selectFirstPoint.y, selectSecondPoint.y);
+			var x, y;
+			for(var i = 0; i < arrayOfStrokes.length; ++i)
+			{
+				var included = true;
+				for(var j = 0; j < arrayOfStrokes[i].length; ++j)
+				{
+					x = arrayOfStrokes[i][j].x;
+					y = arrayOfStrokes[i][j].y;
+					if(x < minx || x > maxx || y < miny || y > maxy)
+					{
+						included = false;
+						break;
+					}
+				}
+				if(included)
+					selectedStrokes.push(arrayOfStrokes[i]);
+			}
+		}
+
+		</script>
+	</body>
+</html>
