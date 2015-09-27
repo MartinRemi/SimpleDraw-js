@@ -12,6 +12,7 @@
 			<fieldset>
 				<legend>Tools</legend>
 				<input type="radio" name="tool" value="draw" checked>Draw<br>
+				<input type="checkbox" name="symetry">Symetry<br> 
 				<input type="radio" name="tool" value="select">Rectangle select<br>
 				<input type="radio" name="tool" value="move">Move selection
 			</fieldset>
@@ -30,7 +31,6 @@
 			this.width = x2-x1;
 			this.height = y2-y1;
 		}
-
 		Rectangle.prototype.contains = function(x, y) {
 			var minx=Math.min(this.x1, this.x2),
 				miny=Math.min(this.y1, this.y2),
@@ -38,7 +38,6 @@
 				maxy=Math.max(this.y1, this.y2);
 			return x < minx || x > maxx || y < miny || y > maxy;
 		}
-
 		function createRectangleFromStroke(stroke)
 		{
 			if(stroke && stroke.length >= 2)
@@ -61,11 +60,9 @@
 			}
 			return false;
 		}
-
 		// Unused function
 		function keyDownHandler(e) {
 			// e = e || window.event;
-
 			if (e.keyCode == '38') {
 				console.log("Up Arrow");
 			}
@@ -79,21 +76,17 @@
 				console.log("Right Arrow");
 			}
 		}
-
 		document.onkeydown = keyDownHandler;
-
 		var canvas = document.getElementById("myCanvas");
 		var canvas_context = canvas.getContext("2d");
 		var canvas_rectangle = canvas.getBoundingClientRect();
-
 		var buttonIsDown = false;
-
 		// this is the set of strokes already drawn
 		var arrayOfStrokes = [];
-
 		// this is the stroke currently being drawn
 		var stroke = []; // each stroke is an array of points
-
+		// this is the symetric stroke currently being drawn
+		var symetric_stroke = [];
 		// this is the coordinates of the first point of the rectangle select being created
 		var selectFirstPoint = {
 			x: 0,
@@ -104,15 +97,12 @@
 			x: 0,
 			y: 0
 		};
-
 		var initialMovePos = {
 			x: 0,
 			y: 0
 		}
-
 		// Selected strokes
 		var selectedStrokes = [];
-
 		function mouseDownHandler(e) {
 			buttonIsDown = true;
 			var tool = getSelectedTool();
@@ -120,7 +110,6 @@
 			var event_y = e.clientY - canvas_rectangle.top;
 			console.log("mouse down");
 			console.log("   " + event_x + "," + event_y);
-
 			// Reset points so that the being created rectangle selection is now displayed in draw and move modes
 			selectFirstPoint.x = 0;
 			selectFirstPoint.y = 0;
@@ -129,6 +118,10 @@
 			if(tool == "draw") {
 				selectedStrokes = [];
 				stroke = [];
+				if(getSymetry())
+				{
+					symetric_stroke = [];
+				}
 			}
 			else if(tool == "select")
 			{
@@ -148,12 +141,16 @@
 			var event_y = e.clientY - canvas_rectangle.top;
 			console.log("mouse up");
 			var tool = getSelectedTool();
-
 			if(tool == "draw") {
 				if ( stroke.length > 2 ) {
 					arrayOfStrokes.push( stroke );
+					if(getSymetry())
+					{
+						arrayOfStrokes.push( symetric_stroke );
+					}
 				}
 				stroke = [];
+				symetric_stroke = [];
 			}
 			else if(tool == "select")
 			{
@@ -165,12 +162,14 @@
 			var event_x = e.clientX - canvas_rectangle.left;
 			var event_y = e.clientY - canvas_rectangle.top;
 			console.log("mouse move");
-
 			var tool = getSelectedTool();
 			if(tool == "draw")
 			{
 				if ( buttonIsDown ) {
 					stroke.push( { x : event_x, y : event_y } );
+					if(getSymetry()) {
+						symetric_stroke.push( { x : canvas_rectangle.width - event_x, y : event_y} );
+					}
 				}
 				redraw();
 			}
@@ -195,11 +194,9 @@
 				redraw();
 			}
 		}
-
 		canvas.addEventListener('mousedown',mouseDownHandler);
 		canvas.addEventListener('mouseup',mouseUpHandler);
 		canvas.addEventListener('mousemove',mouseMoveHandler);
-
 		function drawStroke( s ) {
 			canvas_context.beginPath();
 			for ( var i = 0; i < s.length; ++i ) {
@@ -214,7 +211,6 @@
 			}
 			canvas_context.stroke();
 		}
-
 		function drawRectangleSelect() {
 			canvas_context.lineWidth="1";
 			canvas_context.strokeStyle="#FF9900";
@@ -224,7 +220,6 @@
 			canvas_context.fillRect(selectFirstPoint.x,selectFirstPoint.y,selectSecondPoint.x - selectFirstPoint.x,selectSecondPoint.y - selectFirstPoint.y);
 			canvas_context.stroke();
 		}
-
 		function drawSelection(index)
 		{
 			canvas_context.beginPath();
@@ -232,43 +227,42 @@
 			canvas_context.fillRect(rec.x1, rec.y1, rec.width, rec.height);
 			canvas_context.stroke();
 		}
-
 		var redraw = function() {
 			canvas_context.clearRect(0, 0, canvas.width, canvas.height);
-
 			canvas_context.strokeStyle = "#000000";
 			for ( var i = 0; i < arrayOfStrokes.length; ++i ) {
 				drawStroke( arrayOfStrokes[i] );
 			}
-
 			canvas_context.fillStyle = "rgba(0, 230, 255, " + 0.3 + ")";
 			for ( var i = 0; i < selectedStrokes.length; ++i ) {
 				drawSelection(i);
 			}
-
 			if ( buttonIsDown ) {
 				canvas_context.strokeStyle = "#ff0000";
 				drawStroke( stroke );
+				if( getSymetry() )
+				{
+					drawStroke( symetric_stroke );
+				}
 				drawRectangleSelect();
 			}
 		}
 		redraw();
-
 		function clearButtonHandler() {
 			arrayOfStrokes = [];
 			redraw();
 		}
-
 		function getSelectedTool() {
 			var radios = document.getElementsByName('tool');
-
 			for (var i = 0, length = radios.length; i < length; i++) {
 				if (radios[i].checked) {
 					return radios[i].value;
 				}
 			}
 		}
-
+		function getSymetry() {
+			return document.getElementsByName('symetry')[0].checked;
+		}
 		function computeSelectedStrokes() {
 			var rec = new Rectangle(selectFirstPoint.x, selectFirstPoint.y,
 				selectSecondPoint.x, selectSecondPoint.y);
@@ -290,7 +284,6 @@
 					selectedStrokes.push(i);
 			}
 		}
-
 		</script>
 	</body>
 </html>
