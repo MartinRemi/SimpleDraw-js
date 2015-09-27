@@ -21,7 +21,6 @@
 		<button onclick="clearButtonHandler()">Clear</button>
 
 		<script language="JavaScript">
-
 		// Rectangle "class"
 		var Rectangle = function(x1, y1, x2, y2) {
 			this.x1 = x1;
@@ -165,6 +164,7 @@
 			var tool = getSelectedTool();
 			if(tool == "draw")
 			{
+				setCursorInCanvas('default');
 				if ( buttonIsDown ) {
 					stroke.push( { x : event_x, y : event_y } );
 					if(getSymetry()) {
@@ -173,25 +173,33 @@
 				}
 				redraw();
 			}
-			else if(tool == "select" && buttonIsDown)
+			else if(tool == "select")
 			{
-				selectSecondPoint.x = event_x;
-				selectSecondPoint.y = event_y;
-				redraw();
-			}
-			else if(tool == "move" && buttonIsDown)
-			{
-				for(var i = 0; i < selectedStrokes.length; ++i)
+				setCursorInCanvas('pointer');
+				if( buttonIsDown )
 				{
-					for(var j = 0; j < arrayOfStrokes[selectedStrokes[i]].length; ++j)
-					{
-						arrayOfStrokes[selectedStrokes[i]][j].x += event_x - initialMovePos.x;
-						arrayOfStrokes[selectedStrokes[i]][j].y += event_y - initialMovePos.y;
-					}
+					selectSecondPoint.x = event_x;
+					selectSecondPoint.y = event_y;
+					redraw();
 				}
-				initialMovePos.x = event_x;
-				initialMovePos.y = event_y;
-				redraw();
+			}
+			else if(tool == "move")
+			{
+				setCursorInCanvas('move');
+				if( buttonIsDown)
+				{
+					for(var i = 0; i < selectedStrokes.length; ++i)
+					{
+						for(var j = 0; j < arrayOfStrokes[selectedStrokes[i]].length; ++j)
+						{
+							arrayOfStrokes[selectedStrokes[i]][j].x += event_x - initialMovePos.x;
+							arrayOfStrokes[selectedStrokes[i]][j].y += event_y - initialMovePos.y;
+						}
+					}
+					initialMovePos.x = event_x;
+					initialMovePos.y = event_y;
+					redraw();
+				}
 			}
 		}
 		canvas.addEventListener('mousedown',mouseDownHandler);
@@ -282,6 +290,12 @@
 				}
 				if(included)
 					selectedStrokes.push(i);
+			}
+		}
+		function setCursorInCanvas(cursorStyle) {
+			if ( document.getElementById ) {
+				if ( canvas.style ) 
+					canvas.style.cursor = cursorStyle;
 			}
 		}
 		</script>
