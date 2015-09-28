@@ -78,6 +78,10 @@
 		document.onkeydown = keyDownHandler;
 		var canvas = document.getElementById("myCanvas");
 		var canvas_context = canvas.getContext("2d");
+		//Placeholder function for browsers that don't have setLineDash()
+		if (!canvas_context.setLineDash) {
+			canvas_context.setLineDash = function () {}
+		}
 		var canvas_rectangle = canvas.getBoundingClientRect();
 		var buttonIsDown = false;
 		// this is the set of strokes already drawn
@@ -86,6 +90,8 @@
 		var stroke = []; // each stroke is an array of points
 		// this is the symetric stroke currently being drawn
 		var symetric_stroke = [];
+		// this is the vertical line that is shown in symetric modes
+		var vertical_line = [{x : canvas_rectangle.width/2, y : 0}, {x : canvas_rectangle.width/2, y : canvas_rectangle.height}];
 		// this is the coordinates of the first point of the rectangle select being created
 		var selectFirstPoint = {
 			x: 0,
@@ -245,14 +251,22 @@
 			for ( var i = 0; i < selectedStrokes.length; ++i ) {
 				drawSelection(i);
 			}
+			symetry_on = getSymetry();
 			if ( buttonIsDown ) {
 				canvas_context.strokeStyle = "#ff0000";
 				drawStroke( stroke );
-				if( getSymetry() )
+				if( symetry_on )
 				{
 					drawStroke( symetric_stroke );
 				}
 				drawRectangleSelect();
+			}
+			if( symetry_on ){
+				canvas_context.strokeStyle = "#0000ff";
+				temp = canvas_context.getLineDash();
+				canvas_context.setLineDash([5]);
+				drawStroke( vertical_line );
+				canvas_context.setLineDash(temp);
 			}
 		}
 		redraw();
